@@ -1,4 +1,4 @@
-uusing Example.WebApi.Models;
+using Example.WebApi.Models;
 using Npgsql;
 using NpgsqlTypes;
 using System;
