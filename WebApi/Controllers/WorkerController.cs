@@ -35,7 +35,9 @@ namespace Example.WebApi.Controllers
                             Worker worker = new Worker
                             {
                                 Id = reader.GetGuid(0),
-                                TypeOfJob = reader.GetString(1)
+                                FirstName = reader.GetString(1),
+                                LastName = reader.GetString(2),
+                                Gender = reader.GetChar(3)
                             };
                             workersList.Add(worker);
                         }
@@ -65,7 +67,9 @@ namespace Example.WebApi.Controllers
                             Worker worker = new Worker
                             {
                                 Id = reader.GetGuid(0),
-                                TypeOfJob = reader.GetString(1)
+                                FirstName = reader.GetString(1),
+                                LastName = reader.GetString(2),
+                                Gender = reader.GetChar(3)
                             };
                             return Request.CreateResponse(HttpStatusCode.OK, worker);
                         }
@@ -88,15 +92,16 @@ namespace Example.WebApi.Controllers
             try
             {
                 worker.Id = Guid.NewGuid();
-                using (NpgsqlCommand command = new NpgsqlCommand("INSERT INTO \"Worker\" (\"Id\", \"TypeOfJob\") VALUES (@WorkerId, @TypeOfJob)", connection))
+                using (NpgsqlCommand command = new NpgsqlCommand("INSERT INTO \"Worker\" (\"Id\", \"FirstName\", \"LastName\", \"Gender\") VALUES (@WorkerId, @FirstName, @LastName, @Gender)", connection))
                 {
                     command.Parameters.AddWithValue("@WorkerId", worker.Id);
-                    command.Parameters.AddWithValue("@TypeOfJob", worker.TypeOfJob);
+                    command.Parameters.AddWithValue("@FirstName", worker.FirstName);
+                    command.Parameters.AddWithValue("@LastName", worker.LastName);
+                    command.Parameters.AddWithValue("@Gender", worker.Gender);
                     int result = command.ExecuteNonQuery();
 
                     if (result > 0)
                     {
-                       
                         return Request.CreateResponse(HttpStatusCode.OK, worker);
                     }
                     else
@@ -112,15 +117,15 @@ namespace Example.WebApi.Controllers
         }
 
         // PUT api/worker/5
-        public HttpResponseMessage Put(int id, [FromBody] Worker worker)
+        public HttpResponseMessage Put(Guid id, [FromBody] Worker worker)
         {
             try
             {
-                using (NpgsqlCommand command = new NpgsqlCommand("UPDATE Worker SET typeOfJob = @TypeOfJob,  WHERE workerId = @id", connection))
+                using (NpgsqlCommand command = new NpgsqlCommand("UPDATE \"Worker\" SET \"FirstName\" = @FirstName, \"LastName\" = @LastName, \"Gender\" = @Gender WHERE \"Id\" = @id", connection))
                 {
-                    command.Parameters.AddWithValue("@TypeOfJob", worker.TypeOfJob);
-                    command.Parameters.AddWithValue("@id", id);
-                    command.Parameters.AddWithValue("@id", id);
+                    command.Parameters.AddWithValue("@FirstName", worker.FirstName);
+                    command.Parameters.AddWithValue("@LastName", worker.LastName);
+                    command.Parameters.AddWithValue("@Gender", worker.Gender);
                     command.Parameters.AddWithValue("@id", id);
 
                     int rowsAffected = command.ExecuteNonQuery();
@@ -142,11 +147,11 @@ namespace Example.WebApi.Controllers
         }
 
         // DELETE api/worker/5
-        public HttpResponseMessage Delete(int id)
+        public HttpResponseMessage Delete(Guid id)
         {
             try
             {
-                using (NpgsqlCommand command = new NpgsqlCommand("DELETE FROM Worker WHERE workerId = @id", connection))
+                using (NpgsqlCommand command = new NpgsqlCommand("DELETE FROM \"Worker\" WHERE \"Id\" = @id", connection))
                 {
                     command.Parameters.AddWithValue("@id", id);
 
@@ -180,5 +185,35 @@ namespace Example.WebApi.Controllers
             }
             base.Dispose(disposing);
         }
+
+        // PUT api/worker/setjob/5
+        [Route("api/worker/setjob/{workerId}")]
+        public HttpResponseMessage SetJob(Guid workerId, [FromBody] Guid jobId)
+        {
+            try
+            {
+                using (NpgsqlCommand command = new NpgsqlCommand("UPDATE \"Worker\" SET \"JobId\" = @JobId WHERE \"Id\" = @WorkerId", connection))
+                {
+                    command.Parameters.AddWithValue("@JobId", jobId);
+                    command.Parameters.AddWithValue("@WorkerId", workerId);
+
+                    int rowsAffected = command.ExecuteNonQuery();
+
+                    if (rowsAffected > 0)
+                    {
+                        return Request.CreateResponse(HttpStatusCode.OK, true);
+                    }
+                    else
+                    {
+                        return Request.CreateResponse(HttpStatusCode.NotFound, "Worker not found");
+                    }
+                }
+            }
+            catch (NpgsqlException ex)
+            {
+                return Request.CreateResponse(HttpStatusCode.InternalServerError, ex.Message);
+            }
+        }
+
     }
 }
